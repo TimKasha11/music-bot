@@ -3,84 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Music 2026 Final</title>
+    <title>Music Cloud PRO (yt-dlp Engine)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #05070a; --accent: #00ffaa; --card: #111827; }
+        :root { --bg: #0a0b10; --accent: #7d5fff; --card: #161720; }
         body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         
-        .main-card { background: var(--card); border-radius: 28px; padding: 20px; width: 100%; max-width: 400px; box-sizing: border-box; border: 1px solid #1f2937; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .player-ui { background: var(--card); border-radius: 32px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid #252630; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         
-        /* Ключевое изменение: Официальный плеер без ограничений */
-        .video-wrapper { width: 100%; height: 210px; border-radius: 20px; overflow: hidden; background: #000; margin-bottom: 15px; position: relative; }
-        #player-iframe { width: 100%; height: 100%; border: none; }
+        .search-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 14px; border-radius: 16px; border: none; background: #0a0b10; color: white; outline: none; border: 1px solid #252630; }
+        button#sBtn { background: var(--accent); color: white; border: none; padding: 0 20px; border-radius: 16px; cursor: pointer; font-weight: bold; }
 
-        .search-area { display: flex; gap: 8px; margin-bottom: 15px; }
-        input { flex: 1; padding: 14px; border-radius: 14px; border: 1px solid #374151; background: #05070a; color: white; outline: none; font-size: 16px; }
-        button#sBtn { background: var(--accent); color: black; border: none; padding: 10px 18px; border-radius: 14px; font-weight: bold; cursor: pointer; }
+        .cover-art { width: 200px; height: 200px; border-radius: 24px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(125, 95, 255, 0.3); background: #252630; }
+        .track-name { font-size: 1.4em; font-weight: bold; margin-bottom: 5px; }
+        .track-artist { color: #888; margin-bottom: 20px; }
 
-        .info { margin-bottom: 20px; text-align: center; }
-        .t { font-size: 1.25em; font-weight: 800; margin-bottom: 4px; display: block; }
-        .a { color: var(--accent); font-size: 0.95em; cursor: pointer; opacity: 0.9; }
-        
-        #status-msg { font-size: 0.75em; color: #6b7280; margin: 10px 0; }
+        /* Кастомный аудио-контроллер */
+        audio { width: 100%; height: 40px; margin-top: 10px; border-radius: 10px; filter: invert(100%); }
 
-        .results { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .item { background: #111827; padding: 12px; border-radius: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-        .item:active { background: #1f2937; border-color: var(--accent); }
-        .item img { width: 44px; height: 44px; border-radius: 8px; }
-        .item-text { flex: 1; overflow: hidden; }
-        .item-title { font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .item-artist { font-size: 0.75em; color: #9ca3af; }
+        #status { font-size: 0.8em; color: var(--accent); margin: 15px 0; min-height: 1.2em; font-weight: 500; }
+
+        .list { width: 100%; max-width: 400px; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .item { background: var(--card); padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .item:active { background: #252630; border-color: var(--accent); }
+        .item img { width: 50px; height: 50px; border-radius: 10px; }
+        .item-info { text-align: left; overflow: hidden; }
+        .item-t { font-weight: bold; font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-a { font-size: 0.8em; color: #888; }
     </style>
 </head>
 <body>
 
-<div class="main-card">
-    <div class="search-area">
-        <input type="text" id="sInp" placeholder="Название или артист...">
+<div class="player-ui">
+    <div class="search-row">
+        <input type="text" id="sInp" placeholder="Трек или артист...">
         <button id="sBtn">🔍</button>
     </div>
 
-    <div class="video-wrapper">
-        <iframe id="player-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-
-    <div class="info">
-        <span class="t" id="curT">Готов к музыке</span>
-        <span class="a" id="curA" onclick="artistSearch()">Найди что-нибудь</span>
-    </div>
-    <div id="status-msg">Введите запрос для поиска...</div>
+    <img src="https://via.placeholder.com/400?text=Music+2026" class="cover-art" id="mainCover">
+    <div class="track-name" id="mainT">Music Cloud</div>
+    <div class="track-artist" id="mainA">v9.0 Engine</div>
+    
+    <div id="status">Жду твой любимый трек...</div>
+    
+    <audio id="audioPlayer" controls></audio>
 </div>
 
-<div class="results" id="resList"></div>
+<div class="list" id="resList"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Список актуальных поисковых узлов на 2026 год
-    const SEARCH_NODES = [
-        "https://pipedapi.kavin.rocks",
-        "https://api.piped.yt",
-        "https://piped-api.lunar.icu",
-        "https://inv.tux.digital"
-    ];
+    // Мы используем Cobalt API — это облачный yt-dlp
+    const COBALT_API = "https://api.cobalt.tools/api/json";
+    const PIPED_API = "https://pipedapi.kavin.rocks";
 
-    async function search(query) {
-        if(!query) return;
-        document.getElementById('status-msg').innerText = "Поиск вариантов...";
+    async function searchMusic(q) {
+        if(!q) return;
+        document.getElementById('status').innerText = "🔎 Ищу метаданные...";
         try {
-            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
-            const data = await res.json();
-            render(data.results);
-            document.getElementById('status-msg').innerText = "Выберите трек из списка";
+            const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=10`);
+            const data = await r.json();
+            renderList(data.results);
+            document.getElementById('status').innerText = "Выбери песню из списка ниже";
         } catch(e) { 
-            document.getElementById('status-msg').innerText = "Ошибка сети. Проверьте интернет."; 
+            document.getElementById('status').innerText = "❌ Ошибка поиска"; 
         }
     }
 
-    function render(tracks) {
+    function renderList(tracks) {
         const list = document.getElementById('resList');
         list.innerHTML = '';
         tracks.forEach(t => {
@@ -88,57 +81,59 @@
             d.className = 'item';
             d.innerHTML = `
                 <img src="${t.artworkUrl100}">
-                <div class="item-text">
-                    <div class="item-title">${t.trackName}</div>
-                    <div class="item-artist">${t.artistName}</div>
+                <div class="item-info">
+                    <div class="item-t">${t.trackName}</div>
+                    <div class="item-a">${t.artistName}</div>
                 </div>
             `;
-            d.onclick = () => play(t.trackName, t.artistName);
+            d.onclick = () => getDirectLink(t);
             list.appendChild(d);
         });
     }
 
-    async function play(title, artist) {
-        document.getElementById('curT').innerText = title;
-        document.getElementById('curA').innerText = artist;
-        document.getElementById('status-msg').innerText = "Связь с YouTube...";
+    async function getDirectLink(track) {
+        document.getElementById('mainT').innerText = track.trackName;
+        document.getElementById('mainA').innerText = track.artistName;
+        document.getElementById('mainCover').src = track.artworkUrl100.replace('100x100', '600x600');
+        document.getElementById('status').innerText = "🚀 yt-dlp подготавливает поток...";
         tg.HapticFeedback.impactOccurred('medium');
 
-        let vId = null;
-        const q = `${artist} ${title} audio`;
+        try {
+            // 1. Находим видео на YouTube
+            const sQuery = `${track.artistName} ${track.trackName} audio`;
+            const sRes = await fetch(`${PIPED_API}/search?q=${encodeURIComponent(sQuery)}&filter=music_songs`);
+            const sData = await sRes.json();
+            const videoUrl = "https://www.youtube.com/watch?v=" + sData.items[0].url.split('v=')[1];
 
-        // Перебор серверов для поиска ID
-        for(let node of SEARCH_NODES) {
-            try {
-                const r = await fetch(`${node}/search?q=${encodeURIComponent(q)}&filter=music_songs`);
-                const d = await r.json();
-                if(d.items && d.items[0]) {
-                    vId = d.items[0].url.split('v=')[1];
-                    break;
-                }
-            } catch(e) { continue; }
-        }
+            // 2. Запрашиваем прямую ссылку у Cobalt (Cloud yt-dlp)
+            const cRes = await fetch(COBALT_API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({
+                    url: videoUrl,
+                    downloadMode: "audio",
+                    audioFormat: "mp3",
+                    audioBitrate: "128"
+                })
+            });
+            const cData = await cRes.json();
 
-        if(vId) {
-            // Прямая загрузка через официальный Embed URL (самый стабильный метод)
-            const embedUrl = `https://www.youtube.com/embed/${vId}?autoplay=1&rel=0&modestbranding=1`;
-            document.getElementById('player-iframe').src = embedUrl;
-            document.getElementById('status-msg').innerText = "Сейчас играет";
-        } else {
-            document.getElementById('status-msg').innerText = "Видео не найдено. Попробуйте другой трек.";
+            if(cData.url) {
+                const audio = document.getElementById('audioPlayer');
+                audio.src = cData.url;
+                audio.play();
+                document.getElementById('status').innerText = "✅ Наслаждайся музыкой!";
+            } else {
+                throw new Error();
+            }
+
+        } catch(e) {
+            document.getElementById('status').innerText = "⚠️ Ошибка потока. Попробуй другой трек.";
         }
     }
 
-    function artistSearch() {
-        const a = document.getElementById('curA').innerText;
-        if(a !== "Найди что-нибудь") {
-            document.getElementById('sInp').value = a;
-            search(a);
-        }
-    }
-
-    document.getElementById('sBtn').onclick = () => search(document.getElementById('sInp').value);
-    document.getElementById('sInp').onkeypress = (e) => { if(e.key==='Enter') search(e.target.value); };
+    document.getElementById('sBtn').onclick = () => searchMusic(document.getElementById('sInp').value);
+    document.getElementById('sInp').onkeypress = (e) => { if(e.key==='Enter') searchMusic(e.target.value); };
 </script>
 </body>
 </html>
