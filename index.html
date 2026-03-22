@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>Music Pro Max v3</title>
+    <title>Music Cloud Player v4</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         :root { --accent: #a155ff; --bg: #0b0e14; --card: rgba(255, 255, 255, 0.06); }
         body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
@@ -13,23 +13,28 @@
         .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
         input { flex: 1; padding: 12px; border-radius: 15px; border: none; background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 16px; }
         button#searchBtn { background: var(--accent); border: none; color: white; padding: 10px 18px; border-radius: 15px; cursor: pointer; }
-        .cover { width: 140px; height: 140px; border-radius: 20px; object-fit: cover; margin-bottom: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); background: #1a1d23; }
+        .cover { width: 140px; height: 140px; border-radius: 20px; object-fit: cover; margin-bottom: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
         .title { font-size: 1.3em; font-weight: bold; margin: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .artist { color: var(--accent); cursor: pointer; font-weight: 500; text-decoration: underline; margin-bottom: 8px; display: inline-block; font-size: 1em; }
-        #status { font-size: 0.75em; color: #4facfe; margin-bottom: 10px; min-height: 18px; }
+        .artist { color: var(--accent); cursor: pointer; font-weight: 500; text-decoration: underline; margin-bottom: 8px; display: inline-block; }
+        #status { font-size: 0.75em; color: #4facfe; margin-bottom: 10px; }
         .controls { display: flex; justify-content: center; align-items: center; gap: 25px; }
         .play-btn { background: white; color: black; border: none; width: 55px; height: 55px; border-radius: 50%; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* Скрытый плеер YouTube */
+        #yt-player { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
         .section-header { width: 100%; max-width: 420px; font-size: 0.9em; margin: 20px 0 10px; color: #777; text-transform: uppercase; font-weight: bold; }
         .list-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
-        .track-item { background: var(--card); padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .track-item:active { background: rgba(255,255,255,0.12); transform: scale(0.98); }
+        .track-item { background: var(--card); padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
         .track-item img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; }
         .track-info { flex: 1; overflow: hidden; text-align: left; }
-        .track-name { font-weight: bold; font-size: 0.95em; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-name { font-weight: bold; font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .track-sub { font-size: 0.8em; color: #999; }
     </style>
 </head>
 <body>
+
+<div id="yt-player"></div>
 
 <div class="player-card">
     <div class="search-box">
@@ -37,7 +42,7 @@
         <button id="searchBtn">🔍</button>
     </div>
     <img src="https://via.placeholder.com/300?text=Music" class="cover" id="cover">
-    <div class="title" id="trackTitle">Плеер v3</div>
+    <div class="title" id="trackTitle">Плеер v4 (Direct)</div>
     <div class="artist" id="trackArtist" onclick="searchArtistDirectly()">Найти музыку</div>
     <div id="status"></div>
     <div class="controls">
@@ -52,29 +57,29 @@
 <div class="section-header">Избранное</div>
 <div class="list-container" id="favList"></div>
 
-<div class="section-header">Рекомендации Last.fm</div>
+<div class="section-header">Рекомендации</div>
 <div class="list-container" id="recList"></div>
 
 <script>
     const LFM_KEY = "13cce53ddc5788a1994e9119f85a9895";
-    // Добавил максимально живые сервера на сегодня
-    const YT_SERVERS = [
-        "pipedapi.kavin.rocks", 
-        "piped-api.lunar.icu", 
-        "api-piped.mha.fi", 
-        "pipedapi.rivo.gg", 
-        "pipedapi.fortytwo.rocks"
-    ];
-    let srvIdx = 0;
-    let fetchController = null;
-
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    let audio = new Audio();
+    let player;
     let isPlaying = false;
     let currentTrack = null;
     let favorites = [];
+
+    // Инициализация YouTube Player
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('yt-player', {
+            height: '0', width: '0',
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    }
 
     tg.CloudStorage.getItem('my_music_favs', (err, val) => {
         if(!err && val) { favorites = JSON.parse(val); renderList(favorites, 'favList'); }
@@ -82,17 +87,15 @@
 
     async function findTracks(query) {
         if (!query) return;
-        document.getElementById('status').innerText = "Ищем метаданные...";
-        try {
-            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
-            const data = await res.json();
-            document.getElementById('resHeader').style.display = 'block';
-            renderList(data.results.map(t => ({
-                id: t.trackId, title: t.trackName, artist: t.artistName,
-                cover: t.artworkUrl100.replace('100x100', '600x600')
-            })), 'searchList');
-            document.getElementById('status').innerText = "";
-        } catch(e) { document.getElementById('status').innerText = "Ошибка iTunes"; }
+        document.getElementById('status').innerText = "Поиск...";
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
+        const data = await res.json();
+        document.getElementById('resHeader').style.display = 'block';
+        renderList(data.results.map(t => ({
+            id: t.trackId, title: t.trackName, artist: t.artistName,
+            cover: t.artworkUrl100.replace('100x100', '600x600')
+        })), 'searchList');
+        document.getElementById('status').innerText = "";
     }
 
     function renderList(tracks, containerId) {
@@ -101,7 +104,7 @@
         tracks.forEach(t => {
             const item = document.createElement('div');
             item.className = 'track-item';
-            item.innerHTML = `<img src="${t.cover || 'https://via.placeholder.com/150'}"><div class="track-info"><div class="track-name">${t.title}</div><div class="track-sub">${t.artist}</div></div>`;
+            item.innerHTML = `<img src="${t.cover}"><div class="track-info"><div class="track-name">${t.title}</div><div class="track-sub">${t.artist}</div></div>`;
             item.onclick = () => loadTrack(t);
             container.appendChild(item);
         });
@@ -114,51 +117,37 @@
         document.getElementById('cover').src = track.cover;
         document.getElementById('likeBtn').innerText = favorites.some(f => f.id === track.id) ? "❤️" : "♡";
         
-        // Сброс старого поиска, если он шел
-        if(fetchController) fetchController.abort();
-        
-        srvIdx = 0; // Начинаем с первого сервера для каждого нового трека
-        await getFullStream(track.title, track.artist);
-        fetchRecs(track.title, track.artist);
-    }
-
-    async function getFullStream(title, artist) {
-        document.getElementById('status').innerText = `Подключение... (Сервер ${srvIdx + 1})`;
+        document.getElementById('status').innerText = "Подключение к YouTube...";
         document.getElementById('playBtn').innerText = "⏳";
         
-        fetchController = new AbortController();
-        const timeoutId = setTimeout(() => fetchController.abort(), 6000); // Таймаут 6 сек на сервер
-
-        const query = `${artist} ${title} audio`;
-        const server = YT_SERVERS[srvIdx];
-
+        // Используем поиск YouTube через API без прокси (напрямую)
+        // Мы ищем видео-ID через Piped, но ИГРАЕМ через официальный плеер
         try {
-            const searchRes = await fetch(`https://${server}/search?q=${encodeURIComponent(query)}&filter=music_songs`, { signal: fetchController.signal });
+            const searchRes = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(track.artist + " " + track.title)}&filter=music_songs`);
             const searchData = await searchRes.json();
             const videoId = searchData.items[0].url.split("v=")[1];
             
-            const streamRes = await fetch(`https://${server}/streams/${videoId}`, { signal: fetchController.signal });
-            const streamData = await streamRes.json();
-            
-            const stream = streamData.audioStreams.find(s => s.mimeType.includes('m4a')) || streamData.audioStreams[0];
-            
-            clearTimeout(timeoutId);
-            audio.src = stream.url;
-            audio.play().catch(() => { document.getElementById('status').innerText = "Ошибка воспроизведения. Попробуй еще раз."; });
+            player.loadVideoById(videoId);
+            player.playVideo();
             isPlaying = true;
             document.getElementById('playBtn').innerText = "⏸";
-            document.getElementById('status').innerText = "Качество: High";
-        } catch (e) {
-            clearTimeout(timeoutId);
-            console.warn(`Сервер ${server} не ответил. Пробую следующий...`);
-            srvIdx++;
-            if (srvIdx < YT_SERVERS.length) {
-                getFullStream(title, artist);
-            } else {
-                document.getElementById('status').innerText = "Все сервера заняты. Попробуй позже.";
-                document.getElementById('playBtn').innerText = "▶️";
-            }
+            document.getElementById('status').innerText = "Играет (Direct)";
+        } catch(e) {
+            document.getElementById('status').innerText = "Ошибка поиска потока";
         }
+        
+        fetchRecs(track.title, track.artist);
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.ENDED) {
+            isPlaying = false;
+            document.getElementById('playBtn').innerText = "▶️";
+        }
+    }
+
+    function onPlayerError() {
+        document.getElementById('status').innerText = "Ошибка YouTube. Попробуй другой трек.";
     }
 
     async function fetchRecs(title, artist) {
@@ -167,38 +156,34 @@
             const data = await res.json();
             if(data.similartracks?.track) {
                 renderList(data.similartracks.track.map(t => ({
-                    id: Math.random(), title: t.name, artist: t.artist.name, cover: 'https://via.placeholder.com/150?text=Music'
+                    id: Math.random(), title: t.name, artist: t.artist.name, cover: 'https://via.placeholder.com/150?text=Rec'
                 })), 'recList');
             }
         } catch(e) {}
     }
 
-    function searchArtistDirectly() {
-        const artist = document.getElementById('trackArtist').innerText;
-        if(artist !== "Найти музыку") { document.getElementById('searchInput').value = artist; findTracks(artist); }
-    }
-
     document.getElementById('searchBtn').onclick = () => findTracks(document.getElementById('searchInput').value);
-    document.getElementById('searchInput').onkeypress = (e) => { if(e.key === 'Enter') { document.activeElement.blur(); findTracks(e.target.value); } };
     
     document.getElementById('playBtn').onclick = () => {
-        if(!audio.src) return;
-        if(isPlaying) { audio.pause(); document.getElementById('playBtn').innerText = "▶️"; }
-        else { audio.play(); document.getElementById('playBtn').innerText = "⏸"; }
+        if(isPlaying) { player.pauseVideo(); document.getElementById('playBtn').innerText = "▶️"; }
+        else { player.playVideo(); document.getElementById('playBtn').innerText = "⏸"; }
         isPlaying = !isPlaying;
     };
 
     document.getElementById('likeBtn').onclick = () => {
         if(!currentTrack) return;
         const idx = favorites.findIndex(f => f.id === currentTrack.id);
-        if(idx === -1) { favorites.unshift(currentTrack); document.getElementById('likeBtn').innerText = "❤️"; }
-        else { favorites.splice(idx, 1); document.getElementById('likeBtn').innerText = "♡"; }
+        if(idx === -1) favorites.unshift(currentTrack);
+        else favorites.splice(idx, 1);
         tg.CloudStorage.setItem('my_music_favs', JSON.stringify(favorites));
         renderList(favorites, 'favList');
-        tg.HapticFeedback.impactOccurred('medium');
+        document.getElementById('likeBtn').innerText = idx === -1 ? "❤️" : "♡";
     };
 
-    audio.onended = () => { isPlaying = false; document.getElementById('playBtn').innerText = "▶️"; };
+    function searchArtistDirectly() {
+        const art = document.getElementById('trackArtist').innerText;
+        if(art !== "Найти музыку") { document.getElementById('searchInput').value = art; findTracks(art); }
+    }
 </script>
 </body>
 </html>
