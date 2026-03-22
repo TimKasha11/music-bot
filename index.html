@@ -3,137 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Music Cloud PRO (yt-dlp Engine)</title>
+    <title>Music Hydra v10</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0a0b10; --accent: #7d5fff; --card: #161720; }
-        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        :root { --bg: #080808; --accent: #00ff88; --card: #121212; --text: #e0e0e0; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         
-        .player-ui { background: var(--card); border-radius: 32px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid #252630; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .player-card { background: var(--card); border-radius: 30px; padding: 25px; width: 100%; max-width: 380px; text-align: center; border: 1px solid #222; box-shadow: 0 20px 50px rgba(0,255,136,0.1); position: sticky; top: 10px; z-index: 10; }
         
-        .search-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 14px; border-radius: 16px; border: none; background: #0a0b10; color: white; outline: none; border: 1px solid #252630; }
-        button#sBtn { background: var(--accent); color: white; border: none; padding: 0 20px; border-radius: 16px; cursor: pointer; font-weight: bold; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: white; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent); }
+        button#sBtn { background: var(--accent); color: black; border: none; padding: 0 20px; border-radius: 15px; font-weight: 900; cursor: pointer; }
 
-        .cover-art { width: 200px; height: 200px; border-radius: 24px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(125, 95, 255, 0.3); background: #252630; }
-        .track-name { font-size: 1.4em; font-weight: bold; margin-bottom: 5px; }
-        .track-artist { color: #888; margin-bottom: 20px; }
+        .track-cover { width: 180px; height: 180px; border-radius: 20px; object-fit: cover; margin-bottom: 15px; background: #1a1a1a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .track-title { font-size: 1.3em; font-weight: 800; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-artist { color: var(--accent); font-size: 0.9em; margin-bottom: 20px; opacity: 0.8; }
 
-        /* Кастомный аудио-контроллер */
-        audio { width: 100%; height: 40px; margin-top: 10px; border-radius: 10px; filter: invert(100%); }
+        audio { width: 100%; height: 45px; filter: invert(1); border-radius: 10px; }
+        
+        #status { font-size: 0.75em; color: #888; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
 
-        #status { font-size: 0.8em; color: var(--accent); margin: 15px 0; min-height: 1.2em; font-weight: 500; }
-
-        .list { width: 100%; max-width: 400px; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .item { background: var(--card); padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .item:active { background: #252630; border-color: var(--accent); }
-        .item img { width: 50px; height: 50px; border-radius: 10px; }
-        .item-info { text-align: left; overflow: hidden; }
-        .item-t { font-weight: bold; font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .item-a { font-size: 0.8em; color: #888; }
+        .track-list { width: 100%; max-width: 380px; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .track-item { background: var(--card); padding: 10px; border-radius: 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .track-item:active { background: #1a1a1a; transform: scale(0.98); }
+        .track-item img { width: 50px; height: 50px; border-radius: 10px; }
+        .ti-info { flex: 1; text-align: left; overflow: hidden; }
+        .ti-name { font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ti-art { font-size: 0.8em; color: #666; }
     </style>
 </head>
 <body>
 
-<div class="player-ui">
-    <div class="search-row">
-        <input type="text" id="sInp" placeholder="Трек или артист...">
-        <button id="sBtn">🔍</button>
+<div class="player-card">
+    <div class="search-bar">
+        <input type="text" id="sInp" placeholder="Трек, артист, альбом...">
+        <button id="sBtn">GO</button>
     </div>
 
-    <img src="https://via.placeholder.com/400?text=Music+2026" class="cover-art" id="mainCover">
-    <div class="track-name" id="mainT">Music Cloud</div>
-    <div class="track-artist" id="mainA">v9.0 Engine</div>
+    <img src="https://via.placeholder.com/300?text=HYDRA+v10" class="track-cover" id="mCover">
+    <div class="track-title" id="mT">Hydra Engine</div>
+    <div class="track-artist" id="mA">Ready to stream</div>
     
-    <div id="status">Жду твой любимый трек...</div>
-    
-    <audio id="audioPlayer" controls></audio>
+    <audio id="audio" controls></audio>
+    <div id="status">Ожидание...</div>
 </div>
 
-<div class="list" id="resList"></div>
+<div class="track-list" id="resList"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Мы используем Cobalt API — это облачный yt-dlp
-    const COBALT_API = "https://api.cobalt.tools/api/json";
-    const PIPED_API = "https://pipedapi.kavin.rocks";
+    // Самые надежные инстансы на 2026 год (периодически обновляй этот список)
+    const NODES = [
+        "https://pipedapi.kavin.rocks",
+        "https://api.piped.yt",
+        "https://piped-api.lunar.icu",
+        "https://inv.tux.digital",
+        "https://invidious.snopyta.org"
+    ];
 
-    async function searchMusic(q) {
+    let currentTrack = null;
+
+    async function search(q) {
         if(!q) return;
-        document.getElementById('status').innerText = "🔎 Ищу метаданные...";
+        document.getElementById('status').innerText = "⚡ Поиск в базе...";
         try {
-            const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=10`);
-            const data = await r.json();
-            renderList(data.results);
-            document.getElementById('status').innerText = "Выбери песню из списка ниже";
-        } catch(e) { 
-            document.getElementById('status').innerText = "❌ Ошибка поиска"; 
-        }
+            const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=12`);
+            const d = await r.json();
+            render(d.results);
+            document.getElementById('status').innerText = "Найдено " + d.results.length + " треков";
+        } catch(e) { document.getElementById('status').innerText = "❌ Ошибка iTunes"; }
     }
 
-    function renderList(tracks) {
-        const list = document.getElementById('resList');
-        list.innerHTML = '';
+    function render(tracks) {
+        const l = document.getElementById('resList');
+        l.innerHTML = '';
         tracks.forEach(t => {
-            const d = document.createElement('div');
-            d.className = 'item';
-            d.innerHTML = `
+            const item = document.createElement('div');
+            item.className = 'track-item';
+            item.innerHTML = `
                 <img src="${t.artworkUrl100}">
-                <div class="item-info">
-                    <div class="item-t">${t.trackName}</div>
-                    <div class="item-a">${t.artistName}</div>
+                <div class="ti-info">
+                    <div class="ti-name">${t.trackName}</div>
+                    <div class="ti-art">${t.artistName}</div>
                 </div>
             `;
-            d.onclick = () => getDirectLink(t);
-            list.appendChild(d);
+            item.onclick = () => getStream(t);
+            l.appendChild(item);
         });
     }
 
-    async function getDirectLink(track) {
-        document.getElementById('mainT').innerText = track.trackName;
-        document.getElementById('mainA').innerText = track.artistName;
-        document.getElementById('mainCover').src = track.artworkUrl100.replace('100x100', '600x600');
-        document.getElementById('status').innerText = "🚀 yt-dlp подготавливает поток...";
-        tg.HapticFeedback.impactOccurred('medium');
+    async function getStream(t) {
+        currentTrack = t;
+        document.getElementById('mT').innerText = t.trackName;
+        document.getElementById('mA').innerText = t.artistName;
+        document.getElementById('mCover').src = t.artworkUrl100.replace('100x100', '600x600');
+        document.getElementById('status').innerText = "🔗 Извлечение потока...";
+        tg.HapticFeedback.selectionChanged();
 
-        try {
-            // 1. Находим видео на YouTube
-            const sQuery = `${track.artistName} ${track.trackName} audio`;
-            const sRes = await fetch(`${PIPED_API}/search?q=${encodeURIComponent(sQuery)}&filter=music_songs`);
-            const sData = await sRes.json();
-            const videoUrl = "https://www.youtube.com/watch?v=" + sData.items[0].url.split('v=')[1];
+        const q = `${t.artistName} ${t.trackName} audio`;
+        let success = false;
 
-            // 2. Запрашиваем прямую ссылку у Cobalt (Cloud yt-dlp)
-            const cRes = await fetch(COBALT_API, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                body: JSON.stringify({
-                    url: videoUrl,
-                    downloadMode: "audio",
-                    audioFormat: "mp3",
-                    audioBitrate: "128"
-                })
-            });
-            const cData = await cRes.json();
+        // Перебор нод (Головы Гидры)
+        for(let node of NODES) {
+            try {
+                document.getElementById('status').innerText = `📡 Пробую сервер: ${new URL(node).hostname}`;
+                
+                // 1. Поиск ID видео
+                const sRes = await fetch(`${node}/search?q=${encodeURIComponent(q)}&filter=music_songs`);
+                const sData = await sRes.json();
+                const vId = sData.items[0].url.split('v=')[1];
 
-            if(cData.url) {
-                const audio = document.getElementById('audioPlayer');
-                audio.src = cData.url;
-                audio.play();
-                document.getElementById('status').innerText = "✅ Наслаждайся музыкой!";
-            } else {
-                throw new Error();
+                // 2. Получение прямой ссылки на аудио (как делает yt-dlp)
+                const streamRes = await fetch(`${node}/streams/${vId}`);
+                const streamData = await streamRes.json();
+                
+                // Ищем аудио-поток (m4a или opus)
+                const audioStream = streamData.audioStreams.find(s => s.mimeType.includes('audio/mp4')) || streamData.audioStreams[0];
+
+                if(audioStream && audioStream.url) {
+                    const player = document.getElementById('audio');
+                    player.src = audioStream.url;
+                    player.play();
+                    document.getElementById('status').innerText = "✅ Играет через " + new URL(node).hostname;
+                    success = true;
+                    break;
+                }
+            } catch(e) {
+                console.warn(`Сервер ${node} не справился, идем дальше...`);
             }
+        }
 
-        } catch(e) {
-            document.getElementById('status').innerText = "⚠️ Ошибка потока. Попробуй другой трек.";
+        if(!success) {
+            document.getElementById('status').innerText = "💀 Все сервера YouTube 2026 заблокированы. Попробуй позже.";
         }
     }
 
-    document.getElementById('sBtn').onclick = () => searchMusic(document.getElementById('sInp').value);
-    document.getElementById('sInp').onkeypress = (e) => { if(e.key==='Enter') searchMusic(e.target.value); };
+    document.getElementById('sBtn').onclick = () => search(document.getElementById('sInp').value);
+    document.getElementById('sInp').onkeypress = (e) => { if(e.key==='Enter') search(e.target.value); };
 </script>
 </body>
 </html>
