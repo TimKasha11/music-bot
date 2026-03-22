@@ -3,117 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SoundCloud Mini v11</title>
+    <title>Music Nebula v12</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://w.soundcloud.com/player/api.js"></script>
     <style>
-        :root { --bg: #0d0d0d; --sc-orange: #ff5500; --card: #1a1a1a; }
-        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        :root { --bg: #050505; --accent: #cc00ff; --card: #111; --sub: #888; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         
-        .player-box { background: var(--card); border-radius: 25px; padding: 20px; width: 100%; max-width: 400px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(255,85,0,0.1); border: 1px solid #333; }
+        .glass-player { background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(15px); border-radius: 35px; padding: 25px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
         
-        .search-row { display: flex; gap: 8px; margin-bottom: 20px; }
-        input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #444; background: #000; color: white; outline: none; }
-        button { background: var(--sc-orange); color: white; border: none; padding: 10px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        /* Анимированный фон для красоты */
+        .glass-player::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(204,0,255,0.1) 0%, transparent 70%); animation: rotate 10s linear infinite; z-index: -1; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* Контейнер для виджета */
-        .sc-container { width: 100%; height: 166px; border-radius: 15px; overflow: hidden; background: #000; margin-bottom: 15px; border: 1px solid #333; }
-        iframe { width: 100%; border: none; }
+        .search-row { display: flex; gap: 10px; margin-bottom: 20px; position: relative; z-index: 2; }
+        input { flex: 1; padding: 15px; border-radius: 18px; border: none; background: rgba(255,255,255,0.05); color: white; outline: none; border: 1px solid rgba(255,255,255,0.1); }
+        button#sBtn { background: var(--accent); color: white; border: none; padding: 0 20px; border-radius: 18px; font-weight: bold; cursor: pointer; }
 
-        .status { font-size: 0.8em; color: #888; text-align: center; margin-top: 10px; }
-        .hint { font-size: 0.7em; color: #555; margin-top: 15px; text-align: center; line-height: 1.4; }
-        
-        .popular-list { width: 100%; max-width: 400px; margin-top: 20px; }
-        .tag { display: inline-block; background: #222; padding: 8px 12px; border-radius: 20px; font-size: 0.8em; margin: 4px; cursor: pointer; border: 1px solid #333; }
-        .tag:active { background: var(--sc-orange); }
+        .cover { width: 220px; height: 220px; border-radius: 30px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 15px 35px rgba(204,0,255,0.3); transition: transform 0.3s; }
+        .playing .cover { transform: scale(1.05); }
+
+        .title { font-size: 1.5em; font-weight: 800; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .artist { color: var(--sub); font-size: 0.9em; margin-bottom: 20px; }
+
+        /* Кастомный аудио-контроллер */
+        audio { width: 100%; height: 40px; filter: invert(1) hue-rotate(270deg); margin-top: 10px; }
+
+        #status { font-size: 0.7em; color: var(--accent); margin-top: 15px; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }
+
+        .track-list { width: 100%; max-width: 400px; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .track-item { background: var(--card); padding: 12px; border-radius: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; border: 1px solid transparent; transition: 0.3s; }
+        .track-item:hover { border-color: var(--accent); background: #1a1a1a; }
+        .track-item img { width: 55px; height: 55px; border-radius: 12px; }
+        .ti-info { flex: 1; text-align: left; }
+        .ti-t { font-weight: bold; font-size: 0.95em; }
+        .ti-a { font-size: 0.8em; color: var(--sub); }
+        .source-tag { font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 5px; color: #aaa; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div class="player-box">
+<div class="glass-player" id="playerContainer">
     <div class="search-row">
-        <input type="text" id="urlInput" placeholder="Ссылка на трек или поиск...">
-        <button id="loadBtn">PLAY</button>
+        <input type="text" id="searchInput" placeholder="Поиск в Audius & SC...">
+        <button id="sBtn">SEARCH</button>
     </div>
 
-    <div class="sc-container" id="player-area">
-        <iframe id="sc-widget" src="https://w.soundcloud.com/player/?url=https://soundcloud.com/discover/sets/charts-top:all-music&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false" scrolling="no" frameborder="no" allow="autoplay"></iframe>
-    </div>
-
-    <div class="status" id="statusText">Готов к музыке</div>
+    <img src="https://via.placeholder.com/400?text=Nebula+v12" class="cover" id="mCover">
+    <div class="title" id="mT">Ready to Fly</div>
+    <div class="artist" id="mA">Audius Engine Active</div>
+    
+    <audio id="audioPlayer" controls></audio>
+    <div id="status">Система готова</div>
 </div>
 
-<div class="popular-list">
-    <div class="tag" onclick="loadByGenre('pop')">🔥 Поп</div>
-    <div class="tag" onclick="loadByGenre('rock')">🤘 Рок</div>
-    <div class="tag" onclick="loadByGenre('techno')">🎹 Техно</div>
-    <div class="tag" onclick="loadByGenre('lofi')">☕ Лоу-фай</div>
-</div>
-
-<div class="hint">
-    Совет: Просто вставь ссылку на любой трек SoundCloud, чтобы включить его.
-</div>
+<div class="track-list" id="resList"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    
-    const widgetIframe = document.getElementById('sc-widget');
-    const widget = SC.Widget(widgetIframe);
-    const status = document.getElementById('statusText');
 
-    // Когда виджет готов
-    widget.bind(SC.Widget.Events.READY, () => {
-        status.innerText = "Плеер готов";
-    });
+    // В 2026 году мы используем автоматический выбор самого быстрого узла Audius
+    let audiusHost = "https://discoveryprovider.audius.co"; 
 
-    // Когда начинается воспроизведение
-    widget.bind(SC.Widget.Events.PLAY, () => {
-        status.innerText = "Сейчас играет";
-        tg.HapticFeedback.impactOccurred('light');
-    });
+    async function initAudius() {
+        try {
+            const res = await fetch("https://api.audius.co");
+            const data = await res.json();
+            audiusHost = data.data[0]; // Берем первый живой хост
+        } catch(e) { console.error("Audius host error", e); }
+    }
+    initAudius();
 
-    function loadTrack() {
-        let input = document.getElementById('urlInput').value;
-        if(!input) return;
+    async function searchAll(query) {
+        if(!query) return;
+        document.getElementById('status').innerText = "📡 СКАНИРУЮ СЕТЬ...";
+        const list = document.getElementById('resList');
+        list.innerHTML = '';
 
-        let trackUrl = input;
-
-        // Если это не ссылка, попробуем "поиск" (через перенаправление на мобильный поиск SC)
-        if(!input.includes('soundcloud.com')) {
-            status.innerText = "Поиск трека...";
-            // В 2026 году мы используем oEmbed поиск
-            trackUrl = `https://soundcloud.com/search?q=${encodeURIComponent(input)}`;
+        try {
+            // Поиск в Audius
+            const aRes = await fetch(`${audiusHost}/v1/tracks/search?query=${encodeURIComponent(query)}&app_name=NebulaPlayer`);
+            const aData = await aRes.json();
+            
+            renderTracks(aData.data, 'audius');
+            document.getElementById('status').innerText = `НАЙДЕНО ${aData.data.length} ТРЕКОВ`;
+        } catch(e) {
+            document.getElementById('status').innerText = "❌ ОШИБКА ПОИСКА";
         }
+    }
 
-        status.innerText = "Загрузка потока...";
-        
-        // Магия загрузки нового трека в виджет
-        widget.load(trackUrl, {
-            color: "#ff5500",
-            auto_play: true,
-            hide_related: true,
-            show_comments: false
+    function renderTracks(tracks, source) {
+        const list = document.getElementById('resList');
+        tracks.forEach(t => {
+            const item = document.createElement('div');
+            item.className = 'track-item';
+            // У Audius обложки могут быть в разных размерах, берем 150x150 или дефолт
+            const img = t.artwork ? t.artwork['150x150'] : 'https://via.placeholder.com/150?text=No+Cover';
+            
+            item.innerHTML = `
+                <img src="${img}">
+                <div class="ti-info">
+                    <div class="ti-t">${t.title} <span class="source-tag">${source}</span></div>
+                    <div class="ti-a">${t.user.name}</div>
+                </div>
+            `;
+            item.onclick = () => playAudius(t);
+            list.appendChild(item);
         });
     }
 
-    function loadByGenre(genre) {
-        const genres = {
-            'pop': 'https://soundcloud.com/discover/sets/charts-top:pop',
-            'rock': 'https://soundcloud.com/discover/sets/charts-top:rock',
-            'techno': 'https://soundcloud.com/discover/sets/charts-top:techno',
-            'lofi': 'https://soundcloud.com/discover/sets/track-of-the-day:chill'
-        };
-        widget.load(genres[genre], { auto_play: true });
-        status.innerText = "Загрузка жанра: " + genre;
+    function playAudius(track) {
+        const player = document.getElementById('audioPlayer');
+        const container = document.getElementById('playerContainer');
+        
+        document.getElementById('mT').innerText = track.title;
+        document.getElementById('mA').innerText = track.user.name;
+        document.getElementById('mCover').src = track.artwork ? track.artwork['480x480'] : 'https://via.placeholder.com/480?text=Music';
+        
+        // Прямая ссылка на стрим из Audius API
+        const streamUrl = `${audiusHost}/v1/tracks/${track.id}/stream?app_name=NebulaPlayer`;
+        
+        player.src = streamUrl;
+        player.play();
+        
+        container.classList.add('playing');
+        document.getElementById('status').innerText = "СЕЙЧАС ИГРАЕТ (AUDIUS)";
+        tg.HapticFeedback.notificationOccurred('success');
     }
 
-    document.getElementById('loadBtn').onclick = loadTrack;
-    
-    // Обработка Enter
-    document.getElementById('urlInput').onkeypress = (e) => {
-        if(e.key === 'Enter') loadTrack();
-    };
+    document.getElementById('sBtn').onclick = () => searchAll(document.getElementById('searchInput').value);
+    document.getElementById('searchInput').onkeypress = (e) => { if(e.key === 'Enter') searchAll(e.target.value); };
+
+    // Обработка паузы/плея для анимации
+    const audio = document.getElementById('audioPlayer');
+    audio.onplay = () => document.getElementById('playerContainer').classList.add('playing');
+    audio.onpause = () => document.getElementById('playerContainer').classList.remove('playing');
 </script>
 
 </body>
