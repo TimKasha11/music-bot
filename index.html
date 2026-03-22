@@ -3,69 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>My Music Player</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Ultimate Music Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .player-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 40px; padding: 25px; width: 85%; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        body { margin: 0; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; overflow-x: hidden; }
+        .player-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border-radius: 30px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); z-index: 2; margin-bottom: 20px;}
+        
         .search-box { display: flex; margin-bottom: 20px; }
-        input { flex: 1; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: white; outline: none; }
-        button#searchBtn { background: #3390ec; border: none; color: white; padding: 10px 15px; border-radius: 10px; margin-left: 5px; cursor: pointer; }
-        .cover { width: 100%; aspect-ratio: 1/1; border-radius: 20px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .title { font-size: 1.3em; font-weight: bold; margin-bottom: 5px; }
-        .artist { color: #aaa; margin-bottom: 20px; font-size: 0.9em; }
-        .controls { display: flex; justify-content: center; align-items: center; gap: 20px; }
-        .play-btn { background: white; color: black; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .like-btn { background: none; border: none; color: #ff4757; font-size: 1.8em; margin-top: 20px; cursor: pointer; }
+        input { flex: 1; padding: 12px; border-radius: 12px; border: none; background: rgba(255,255,255,0.15); color: white; outline: none; font-size: 16px; }
+        input::placeholder { color: rgba(255,255,255,0.5); }
+        button#searchBtn { background: #8e2de2; border: none; color: white; padding: 10px 15px; border-radius: 12px; margin-left: 8px; cursor: pointer; font-size: 18px; transition: 0.2s; }
+        button#searchBtn:active { transform: scale(0.9); }
+        
+        .cover { width: 100%; aspect-ratio: 1/1; border-radius: 20px; object-fit: cover; margin-bottom: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s; background: #111; }
+        .title { font-size: 1.4em; font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .artist { color: #ccc; margin-bottom: 10px; font-size: 1em; }
+        #statusMsg { font-size: 0.8em; color: #4facfe; margin-bottom: 15px; min-height: 15px; }
+
+        .controls { display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 15px;}
+        .play-btn { background: white; color: black; border: none; width: 65px; height: 65px; border-radius: 50%; font-size: 1.8em; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; }
+        .play-btn:active { transform: scale(0.95); }
+        .like-btn { background: none; border: none; color: #ff4757; font-size: 2em; cursor: pointer; transition: transform 0.2s; }
+        .like-btn:active { transform: scale(0.8); }
+        
+        /* Списки: Избранное и Рекомендации */
+        .lists-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 30px;}
+        .list-box { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .list-box h3 { margin: 0 0 10px 0; font-size: 1.1em; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;}
+        .track-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
+        
+        /* Стилизация скролла */
+        .track-list::-webkit-scrollbar { width: 4px; }
+        .track-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .track-item { background: rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .track-item:active { background: rgba(255,255,255,0.2); }
+        .track-info { flex: 1; overflow: hidden; }
+        .track-item-title { font-size: 0.9em; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-item-artist { font-size: 0.75em; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
 
 <div class="player-card">
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Какую песню ищем?">
+        <input type="text" id="searchInput" placeholder="Трек или исполнитель...">
         <button id="searchBtn">🔍</button>
     </div>
 
-    <img src="https://via.placeholder.com/300?text=Music" class="cover" id="cover">
+    <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop" class="cover" id="cover">
     <div class="title" id="trackTitle">Твоя музыка</div>
-    <div class="artist" id="trackArtist">Введи название выше</div>
+    <div class="artist" id="trackArtist">Найди свой первый трек</div>
+    <div id="statusMsg"></div>
     
     <div class="controls">
         <button class="play-btn" id="playBtn">▶️</button>
+        <button class="like-btn" id="likeBtn">♡</button>
     </div>
-    
-    <button class="like-btn" id="likeBtn">♡</button>
+</div>
+
+<div class="lists-container">
+    <div class="list-box">
+        <h3>❤️ Избранное (Сохраненные)</h3>
+        <div class="track-list" id="favList"></div>
+    </div>
+
+    <div class="list-box">
+        <h3>🎧 Рекомендации Last.fm</h3>
+        <div class="track-list" id="recList">
+            <div style="color:#aaa; font-size:0.8em; padding: 10px 0;">Включи трек, чтобы получить рекомендации</div>
+        </div>
+    </div>
 </div>
 
 <script>
+    // ==========================================
+    // 13cce53ddc5788a1994e9119f85a9895
+    const LASTFM_API_KEY = "ТВОЙ_КЛЮЧ_ОТ_LAST_FM"; 
+    // ==========================================
+
     const tg = window.Telegram.WebApp;
     tg.expand();
     tg.ready();
 
     let audio = new Audio();
     let isPlaying = false;
+    let currentTrackData = null; 
+    let favorites = [];
 
-    // Функция поиска
-    async function search(query) {
+    // Загружаем любимые треки из облака
+    tg.CloudStorage.getItem('my_saved_tracks', (err, value) => {
+        if (!err && value) {
+            favorites = JSON.parse(value);
+            renderFavorites();
+        }
+    });
+
+    function setStatus(text) {
+        document.getElementById('statusMsg').innerText = text;
+    }
+
+    // 1. Поиск: объединяем iTunes (для обложки) и YouTube (для полной песни)
+    async function searchAndPlay(query, forceArtist = null) {
         if (!query) return;
-        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
-        const data = await response.json();
+        tg.HapticFeedback.impactOccurred('light');
+        setStatus("Ищем метаданные...");
         
-        if (data.results.length > 0) {
-            const track = data.results[0];
-            document.getElementById('trackTitle').innerText = track.trackName;
-            document.getElementById('trackArtist').innerText = track.artistName;
-            document.getElementById('cover').src = track.artworkUrl100.replace('100x100', '600x600');
+        let title = query;
+        let artist = forceArtist || "Неизвестен";
+        let cover = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop";
+
+        try {
+            // Ищем красивую обложку
+            const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
+            const itunesData = await itunesRes.json();
             
-            audio.src = track.previewUrl;
-            playMusic();
-        } else {
-            alert("Ничего не нашли :(");
+            if (itunesData.results.length > 0) {
+                title = itunesData.results[0].trackName;
+                artist = itunesData.results[0].artistName;
+                cover = itunesData.results[0].artworkUrl100.replace('100x100', '600x600');
+            }
+
+            // Грузим полную версию с YouTube
+            await loadFromYouTube(title, artist, cover);
+            
+            // Запрашиваем рекомендации
+            getRecommendations(title, artist);
+
+        } catch (err) {
+            setStatus("Ошибка поиска :(");
+            console.error(err);
         }
     }
 
+    // 2. Вытягиваем полный аудиопоток из YouTube через открытый Piped API
+    async function loadFromYouTube(title, artist, cover) {
+        setStatus("Подключаемся к YouTube...");
+        document.getElementById('playBtn').innerText = "⏳";
+        
+        try {
+            const searchQuery = `${artist} - ${title} audio`;
+            const ytSearch = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchQuery)}&filter=music_songs`);
+            let ytData = await ytSearch.json();
+            
+            // Если фильтр песен не сработал, ищем вообще всё
+            if (!ytData.items || ytData.items.length === 0) {
+                const ytSearchAll = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchQuery)}&filter=all`);
+                ytData = await ytSearchAll.json();
+            }
+
+            const video = ytData.items.find(i => i.type === 'stream');
+            if (!video) throw new Error("Не найдено на YT");
+
+            const streamId = video.url.split('?v=')[1];
+            
+            setStatus("Загружаем трек целиком...");
+            const streamRes = await fetch(`https://pipedapi.kavin.rocks/streams/${streamId}`);
+            const streamData = await streamRes.json();
+            
+            // Ищем лучший формат аудио (m4a или webm)
+            const audioStream = streamData.audioStreams.find(s => s.mimeType.includes('m4a')) || streamData.audioStreams[0];
+            
+            if (!audioStream) throw new Error("Нет аудиопотока");
+
+            // Устанавливаем в плеер
+            currentTrackData = {
+                id: btoa(unescape(encodeURIComponent(title + artist))), // Уникальный ID из названия
+                title: title,
+                artist: artist,
+                cover: cover
+            };
+
+            updatePlayerUI();
+            audio.src = audioStream.url;
+            playMusic();
+            setStatus(""); // Очищаем статус
+
+        } catch (err) {
+            setStatus("Не удалось вытянуть аудио с YouTube");
+            document.getElementById('playBtn').innerText = "▶️";
+        }
+    }
+
+    // 3. Рекомендации Last.fm
+    async function getRecommendations(title, artist) {
+        if (!LASTFM_API_KEY || LASTFM_API_KEY === "ТВОЙ_КЛЮЧ_ОТ_LAST_FM") return;
+        
+        try {
+            const url = `https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(title)}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data.similartracks && data.similartracks.track) {
+                renderRecommendations(data.similartracks.track);
+            } else {
+                document.getElementById('recList').innerHTML = '<div style="color:#aaa; font-size:0.8em; padding: 10px 0;">Для этого трека нет рекомендаций</div>';
+            }
+        } catch (e) {
+            console.error("LastFM Error:", e);
+        }
+    }
+
+    // Обновление интерфейса плеера
+    function updatePlayerUI() {
+        document.getElementById('trackTitle').innerText = currentTrackData.title;
+        document.getElementById('trackArtist').innerText = currentTrackData.artist;
+        document.getElementById('cover').src = currentTrackData.cover;
+        
+        // Проверка на лайк
+        const isFav = favorites.some(t => t.id === currentTrackData.id);
+        document.getElementById('likeBtn').innerText = isFav ? "❤️" : "♡";
+    }
+
     function playMusic() {
+        if (!audio.src) return;
         audio.play();
         isPlaying = true;
         document.getElementById('playBtn').innerText = "⏸";
@@ -77,18 +231,99 @@
         document.getElementById('playBtn').innerText = "▶️";
     }
 
-    // Слушатели событий
+    // Кнопка Лайка (Сохранение)
+    function toggleLike() {
+        if (!currentTrackData) return;
+        tg.HapticFeedback.impactOccurred('medium');
+
+        const index = favorites.findIndex(t => t.id === currentTrackData.id);
+        
+        if (index === -1) {
+            favorites.unshift(currentTrackData);
+            document.getElementById('likeBtn').innerText = "❤️";
+        } else {
+            favorites.splice(index, 1);
+            document.getElementById('likeBtn').innerText = "♡";
+        }
+
+        tg.CloudStorage.setItem('my_saved_tracks', JSON.stringify(favorites));
+        renderFavorites();
+    }
+
+    // Отрисовка Избранного
+    function renderFavorites() {
+        const listDiv = document.getElementById('favList');
+        listDiv.innerHTML = ''; 
+        
+        if (favorites.length === 0) {
+            listDiv.innerHTML = '<div style="color:#aaa; font-size:0.8em; padding: 10px 0;">Тут пока пусто. Нажми ♡ на любой песне!</div>';
+            return;
+        }
+
+        favorites.forEach(track => {
+            const item = document.createElement('div');
+            item.className = 'track-item';
+            item.innerHTML = `
+                <div class="track-info">
+                    <div class="track-item-title">${track.title}</div>
+                    <div class="track-item-artist">${track.artist}</div>
+                </div>
+            `;
+            item.onclick = () => {
+                tg.HapticFeedback.impactOccurred('light');
+                // При клике загружаем полную версию заново!
+                loadFromYouTube(track.title, track.artist, track.cover);
+            };
+            listDiv.appendChild(item);
+        });
+    }
+
+    // Отрисовка Рекомендаций
+    function renderRecommendations(tracks) {
+        const listDiv = document.getElementById('recList');
+        listDiv.innerHTML = ''; 
+        
+        tracks.forEach(track => {
+            const item = document.createElement('div');
+            item.className = 'track-item';
+            item.innerHTML = `
+                <div class="track-info">
+                    <div class="track-item-title">${track.name}</div>
+                    <div class="track-item-artist">${track.artist.name}</div>
+                </div>
+            `;
+            item.onclick = () => {
+                tg.HapticFeedback.impactOccurred('light');
+                // При клике на рекомендацию ищем её и включаем
+                searchAndPlay(`${track.artist.name} ${track.name}`);
+            };
+            listDiv.appendChild(item);
+        });
+    }
+
+    // Слушатели кнопок
     document.getElementById('searchBtn').onclick = () => {
-        search(document.getElementById('searchInput').value);
+        searchAndPlay(document.getElementById('searchInput').value);
     };
 
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.activeElement.blur(); // Скрываем клавиатуру телефона
+            searchAndPlay(this.value);
+        }
+    });
+
     document.getElementById('playBtn').onclick = () => {
+        if(!audio.src) return;
+        tg.HapticFeedback.impactOccurred('light');
         if (isPlaying) pauseMusic(); else playMusic();
     };
 
-    document.getElementById('likeBtn').onclick = function() {
-        this.innerText = this.innerText === "♡" ? "❤️" : "♡";
-        tg.HapticFeedback.impactOccurred('medium'); // Вибрация при лайке!
+    document.getElementById('likeBtn').onclick = toggleLike;
+    
+    audio.onended = () => {
+        isPlaying = false;
+        document.getElementById('playBtn').innerText = "▶️";
     };
 </script>
 
