@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Music Cloud Player v4</title>
+    <title>Music Cloud Ultra v5</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-        :root { --accent: #a155ff; --bg: #0b0e14; --card: rgba(255, 255, 255, 0.06); }
+        :root { --accent: #ff0055; --bg: #050505; --card: rgba(255, 255, 255, 0.05); }
         body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
-        .player-card { background: var(--card); backdrop-filter: blur(25px); border-radius: 30px; padding: 20px; width: 100%; max-width: 420px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; position: sticky; top: 5px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { flex: 1; padding: 12px; border-radius: 15px; border: none; background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 16px; }
-        button#searchBtn { background: var(--accent); border: none; color: white; padding: 10px 18px; border-radius: 15px; cursor: pointer; }
-        .cover { width: 140px; height: 140px; border-radius: 20px; object-fit: cover; margin-bottom: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
-        .title { font-size: 1.3em; font-weight: bold; margin: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .artist { color: var(--accent); cursor: pointer; font-weight: 500; text-decoration: underline; margin-bottom: 8px; display: inline-block; }
-        #status { font-size: 0.75em; color: #4facfe; margin-bottom: 10px; }
-        .controls { display: flex; justify-content: center; align-items: center; gap: 25px; }
-        .play-btn { background: white; color: black; border: none; width: 55px; height: 55px; border-radius: 50%; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .player-card { background: var(--card); backdrop-filter: blur(30px); border-radius: 30px; padding: 25px; width: 100%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 14px; border-radius: 15px; border: none; background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 16px; }
+        button#searchBtn { background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-size: 18px; }
+        .cover { width: 180px; height: 180px; border-radius: 25px; object-fit: cover; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(255,0,85,0.3); }
+        .title { font-size: 1.4em; font-weight: bold; margin: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .artist { color: var(--accent); cursor: pointer; font-weight: 500; text-decoration: underline; margin-bottom: 15px; display: inline-block; }
+        #status { font-size: 0.8em; color: #00ffcc; margin-bottom: 15px; font-weight: 500; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 30px; }
+        .play-btn { background: white; color: black; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.6em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         
-        /* Скрытый плеер YouTube */
-        #yt-player { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        #yt-player { position: absolute; top: -1000px; left: -1000px; visibility: hidden; } /* Прячем плеер */
 
-        .section-header { width: 100%; max-width: 420px; font-size: 0.9em; margin: 20px 0 10px; color: #777; text-transform: uppercase; font-weight: bold; }
-        .list-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
-        .track-item { background: var(--card); padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
-        .track-item img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; }
+        .section-header { width: 100%; max-width: 400px; font-size: 0.9em; margin: 20px 0 10px; color: #666; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+        .list-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 40px; }
+        .track-item { background: var(--card); padding: 12px; border-radius: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.3s; }
+        .track-item:active { transform: scale(0.96); background: rgba(255,255,255,0.1); }
+        .track-item img { width: 55px; height: 55px; border-radius: 12px; object-fit: cover; }
         .track-info { flex: 1; overflow: hidden; text-align: left; }
-        .track-name { font-weight: bold; font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .track-sub { font-size: 0.8em; color: #999; }
+        .track-name { font-weight: bold; font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-sub { font-size: 0.85em; color: #888; }
     </style>
 </head>
 <body>
@@ -38,20 +38,20 @@
 
 <div class="player-card">
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Песня или артист...">
+        <input type="text" id="searchInput" placeholder="Поиск музыки...">
         <button id="searchBtn">🔍</button>
     </div>
-    <img src="https://via.placeholder.com/300?text=Music" class="cover" id="cover">
-    <div class="title" id="trackTitle">Плеер v4 (Direct)</div>
-    <div class="artist" id="trackArtist" onclick="searchArtistDirectly()">Найти музыку</div>
+    <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400" class="cover" id="cover">
+    <div class="title" id="trackTitle">Ultra Player</div>
+    <div class="artist" id="trackArtist" onclick="searchArtistDirectly()">Выбери трек</div>
     <div id="status"></div>
     <div class="controls">
         <button class="play-btn" id="playBtn">▶️</button>
-        <button style="background:none; border:none; color:#ff4757; font-size:1.8em; cursor:pointer;" id="likeBtn">♡</button>
+        <button style="background:none; border:none; color:#ff0055; font-size:2em; cursor:pointer;" id="likeBtn">♡</button>
     </div>
 </div>
 
-<div class="section-header" id="resHeader" style="display:none;">Результаты поиска</div>
+<div class="section-header" id="resHeader" style="display:none;">Найдено в сети</div>
 <div class="list-container" id="searchList"></div>
 
 <div class="section-header">Избранное</div>
@@ -70,14 +70,12 @@
     let currentTrack = null;
     let favorites = [];
 
-    // Инициализация YouTube Player
+    // Инициализация YT
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('yt-player', {
-            height: '0', width: '0',
-            events: {
-                'onStateChange': onPlayerStateChange,
-                'onError': onPlayerError
-            }
+            height: '200', width: '200',
+            playerVars: { 'autoplay': 1, 'controls': 0, 'disablekb': 1 },
+            events: { 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
         });
     }
 
@@ -87,15 +85,17 @@
 
     async function findTracks(query) {
         if (!query) return;
-        document.getElementById('status').innerText = "Поиск...";
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
-        const data = await res.json();
-        document.getElementById('resHeader').style.display = 'block';
-        renderList(data.results.map(t => ({
-            id: t.trackId, title: t.trackName, artist: t.artistName,
-            cover: t.artworkUrl100.replace('100x100', '600x600')
-        })), 'searchList');
-        document.getElementById('status').innerText = "";
+        document.getElementById('status').innerText = "Ищем...";
+        try {
+            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=10`);
+            const data = await res.json();
+            document.getElementById('resHeader').style.display = 'block';
+            renderList(data.results.map(t => ({
+                id: t.trackId, title: t.trackName, artist: t.artistName,
+                cover: t.artworkUrl100.replace('100x100', '600x600')
+            })), 'searchList');
+            document.getElementById('status').innerText = "";
+        } catch(e) { document.getElementById('status').innerText = "Ошибка сети"; }
     }
 
     function renderList(tracks, containerId) {
@@ -110,36 +110,35 @@
         });
     }
 
-    async function loadTrack(track) {
+    function loadTrack(track) {
         currentTrack = track;
         document.getElementById('trackTitle').innerText = track.title;
         document.getElementById('trackArtist').innerText = track.artist;
         document.getElementById('cover').src = track.cover;
         document.getElementById('likeBtn').innerText = favorites.some(f => f.id === track.id) ? "❤️" : "♡";
-        
-        document.getElementById('status').innerText = "Подключение к YouTube...";
+        document.getElementById('status').innerText = "Синхронизация с YouTube...";
         document.getElementById('playBtn').innerText = "⏳";
+
+        // ХИТРЫЙ МЕТОД: Используем поиск через плейлист YouTube
+        // Он найдет видео по названию и артисту автоматически
+        const searchTerm = `${track.artist} ${track.title} music`;
+        player.loadPlaylist({
+            listType: 'search',
+            list: searchTerm,
+            index: 0,
+            suggestedQuality: 'small'
+        });
         
-        // Используем поиск YouTube через API без прокси (напрямую)
-        // Мы ищем видео-ID через Piped, но ИГРАЕМ через официальный плеер
-        try {
-            const searchRes = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(track.artist + " " + track.title)}&filter=music_songs`);
-            const searchData = await searchRes.json();
-            const videoId = searchData.items[0].url.split("v=")[1];
-            
-            player.loadVideoById(videoId);
-            player.playVideo();
-            isPlaying = true;
-            document.getElementById('playBtn').innerText = "⏸";
-            document.getElementById('status').innerText = "Играет (Direct)";
-        } catch(e) {
-            document.getElementById('status').innerText = "Ошибка поиска потока";
-        }
-        
+        isPlaying = true;
+        document.getElementById('playBtn').innerText = "⏸";
         fetchRecs(track.title, track.artist);
     }
 
     function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            document.getElementById('status').innerText = "Сейчас играет";
+            document.getElementById('playBtn').innerText = "⏸";
+        }
         if (event.data == YT.PlayerState.ENDED) {
             isPlaying = false;
             document.getElementById('playBtn').innerText = "▶️";
@@ -147,7 +146,7 @@
     }
 
     function onPlayerError() {
-        document.getElementById('status').innerText = "Ошибка YouTube. Попробуй другой трек.";
+        document.getElementById('status').innerText = "Ошибка поиска. Попробуй другой трек.";
     }
 
     async function fetchRecs(title, artist) {
@@ -156,7 +155,7 @@
             const data = await res.json();
             if(data.similartracks?.track) {
                 renderList(data.similartracks.track.map(t => ({
-                    id: Math.random(), title: t.name, artist: t.artist.name, cover: 'https://via.placeholder.com/150?text=Rec'
+                    id: Math.random(), title: t.name, artist: t.artist.name, cover: 'https://via.placeholder.com/200?text=Song'
                 })), 'recList');
             }
         } catch(e) {}
@@ -182,7 +181,7 @@
 
     function searchArtistDirectly() {
         const art = document.getElementById('trackArtist').innerText;
-        if(art !== "Найти музыку") { document.getElementById('searchInput').value = art; findTracks(art); }
+        if(art !== "Выбери трек") { document.getElementById('searchInput').value = art; findTracks(art); }
     }
 </script>
 </body>
